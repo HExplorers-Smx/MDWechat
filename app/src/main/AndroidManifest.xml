@@ -1,14 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.blanke.mdwechat">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Android 11+ uses the Settings-granted special access below for /sdcard/mdwechat. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <!-- Legacy devices still need normal external-storage permissions. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <queries>
+        <package android:name="com.tencent.mm" />
+        <package android:name="com.coolapk.market" />
+        <package android:name="com.eg.android.AlipayGphone" />
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 
     <application
         android:icon="@mipmap/mdwechat_icon"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -22,7 +48,9 @@
             android:name="xposedminversion"
             android:value="42" />
 
-        <activity android:name=".settings.SettingsActivity">
+        <activity
+            android:name=".settings.SettingsActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
@@ -32,6 +60,7 @@
         <activity-alias
             android:name="com.blanke.mdwechat.SettingsLauncher"
             android:enabled="true"
+            android:exported="true"
             android:targetActivity=".settings.SettingsActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import dalvik.system.DexClassLoader
 import net.dongliu.apk.parser.ApkFile
 import net.dongliu.apk.parser.bean.DexClass
+import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import kotlin.concurrent.thread
@@ -155,6 +156,7 @@ class Main {
 
         val outputJson = OutputJson(classesMap, methodMap, fieldMap)
         val json = Gson().toJson(outputJson)
+        File(outputPath).mkdirs()
         val op = outputPath + "/${versionName}.config"
         val succ = FileIOUtils.writeFileFromString(op, json)
         Logs.i("保存到文件状态:${succ}，$op")

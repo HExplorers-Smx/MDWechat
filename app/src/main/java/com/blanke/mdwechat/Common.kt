@@ -1,7 +1,7 @@
 package com.blanke.mdwechat
 
-import android.os.Environment
 import com.blanke.mdwechat.util.LogUtil
+import com.blanke.mdwechat.util.StorageAccess
 import com.blanke.mdwechat.util.VXPUtils
 import java.io.File
 
@@ -39,10 +39,10 @@ object Common {
     }
 
     val APP_DIR_PATH: String by lazy {
-        // debug VXP 环境下，区分目录
-        val appDir = if (isVXPEnv && BuildConfig.DEBUG) APP_VXP_DIR else APP_DIR
+        // debug VXP 环境下，区分目录；目录仍然保持在共享存储，方便微信进程中的 Xposed Hook 读取。
+        val appDir = StorageAccess.appDirectoryName()
 //        LogUtil.log("isVXPEnv = $isVXPEnv")
         LogUtil.log("app dir = $appDir")
-        Environment.getExternalStorageDirectory().absolutePath + File.separator + appDir + File.separator
+        StorageAccess.appDirectoryPath()
     }
 }

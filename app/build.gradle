@@ -1,73 +1,74 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+plugins {
+    id 'com.android.application'
+}
 
 android {
-    compileSdkVersion 27
+    namespace 'com.blanke.mdwechat'
+    compileSdk 36
 
     defaultConfig {
-        applicationId "com.blanke.mdwechat"
-        minSdkVersion 21
-        targetSdkVersion 27
-        versionCode 37
-        versionName "3.4.0"
+        applicationId 'com.blanke.mdwechat'
+        minSdk 21
+        targetSdk 36
+        versionCode 38
+        versionName '3.5.0'
     }
+
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    lintOptions {
+
+    lint {
         checkReleaseBuilds false
         abortOnError false
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:appcompat-v7:23.0.0'
+
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.core:core-ktx:1.17.0'
 
     compileOnly 'de.robv.android.xposed:api:53'
-    compileOnly 'de.robv.android.xposed:api:53:sources'
 
     implementation project(':fab-lib')
     implementation project(':tablayout-lib')
     implementation project(':ColorPicker')
 
     implementation 'com.google.code.gson:gson:2.8.4'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-
     implementation 'com.github.Blankeer:rclayout:v1.6.0'
-
     implementation 'net.dongliu:apk-parser:2.5.3'
     implementation 'com.blankj:utilcode:1.19.3'
     implementation 'org.greenrobot:eventbus:3.1.1'
     implementation 'com.squareup.okhttp3:okhttp:3.11.0'
-
     implementation 'ru.noties:markwon:1.1.0'
     implementation 'ru.noties:markwon-image-loader:1.1.0'
     implementation 'org.jooq:jooq:3.11.11'
 }
 
+def targetPackage = 'com.tencent.mm'
 
-afterEvaluate {
-    installDebug.doLast {
-        killTargetAPP.execute()
-        startTargetAPP.execute()
-    }
+tasks.register('killTargetAPP', Exec) {
+    group = 'wechat'
+    description = 'Force-stop WeChat after installing a debug build.'
+    commandLine android.adbExecutable, 'shell', 'am', 'force-stop', targetPackage
 }
 
-def pkg = 'com.tencent.mm'
-task killTargetAPP(type: Exec) {
-    commandLine android.adbExecutable, 'shell', 'am', 'force-stop', pkg
+tasks.register('startTargetAPP', Exec) {
+    group = 'wechat'
+    description = 'Start WeChat after installing a debug build.'
+    commandLine android.adbExecutable, 'shell', 'monkey', '-p', targetPackage, '-c', 'android.intent.category.LAUNCHER', '1'
 }
 
-task startTargetAPP(type: Exec) {
-    //adb shell monkey -p your.app.package.name -c android.intent.category.LAUNCHER 1
-    commandLine android.adbExecutable, 'shell', 'monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1'
+tasks.matching { it.name == 'installDebug' }.configureEach {
+    finalizedBy 'killTargetAPP', 'startTargetAPP'
 }

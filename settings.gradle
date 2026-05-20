@@ -1,1 +1,21 @@
-include ':app',':fab-lib',':tablayout-lib',':ColorPicker'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        // Xposed API artifacts are not published to Maven Central.
+        maven { url 'https://artifactory.appodeal.com/appodeal-public/' }
+    }
+}
+
+rootProject.name = 'MDWechat'
+include ':app', ':fab-lib', ':tablayout-lib', ':ColorPicker'

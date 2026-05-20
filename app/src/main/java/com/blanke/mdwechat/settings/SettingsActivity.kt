@@ -2,19 +2,18 @@ package com.blanke.mdwechat.settings
 
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.support.v4.app.ActivityCompat
 import android.view.View
 import android.widget.Toast
 import com.blanke.mdwechat.Common
 import com.blanke.mdwechat.R
 import com.blanke.mdwechat.config.AppCustomConfig
 import com.blanke.mdwechat.util.FileUtils
+import com.blanke.mdwechat.util.StorageAccess
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -27,16 +26,31 @@ import kotlin.concurrent.thread
 
 class SettingsActivity : Activity() {
     private lateinit var fab: View
+    private var waitingForStorageGrant = false
+    private var hasStartedConfigCopy = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         Common.APP_DIR_PATH
-        verifyStoragePermissions(this)
         fab = findViewById(R.id.fab)
         fab.setOnClickListener {
             copyConfig()
             goToWechatSettingPage()
+        }
+        verifyStoragePermissions(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (waitingForStorageGrant) {
+            waitingForStorageGrant = false
+            if (StorageAccess.hasSharedStorageAccess(this)) {
+                copyConfig()
+            } else {
+                Toast.makeText(this, R.string.msg_permission_fail, Toast.LENGTH_LONG).show()
+                finish()
+            }
         }
     }
 
@@ -52,13 +66,19 @@ class SettingsActivity : Activity() {
         val sharedPrefsFile = File(sharedPrefsDir, Common.MOD_PREFS + ".xml")
         val sdSPFile = File(AppCustomConfig.getConfigFile(Common.MOD_PREFS + ".xml"))
         if (sharedPrefsFile.exists()) {
-            val outStream = FileOutputStream(sdSPFile)
-            FileUtils.copyFile(FileInputStream(sharedPrefsFile), outStream)
+            sdSPFile.parentFile?.mkdirs()
+            FileOutputStream(sdSPFile).use { outStream ->
+                FileInputStream(sharedPrefsFile).use { input ->
+                    FileUtils.copyFile(input, outStream)
+                }
+            }
         } else if (sdSPFile.exists()) { // restore sharedPrefsFile
-            sharedPrefsFile.parentFile.mkdirs()
-            val input = FileInputStream(sdSPFile)
-            val outStream = FileOutputStream(sharedPrefsFile)
-            FileUtils.copyFile(input, outStream)
+            sharedPrefsFile.parentFile?.mkdirs()
+            FileInputStream(sdSPFile).use { input ->
+                FileOutputStream(sharedPrefsFile).use { outStream ->
+                    FileUtils.copyFile(input, outStream)
+                }
+            }
         }
     }
 
@@ -71,7 +91,12 @@ class SettingsActivity : Activity() {
     }
 
     private fun copyConfig() {
+        if (hasStartedConfigCopy) {
+            return
+        }
+        hasStartedConfigCopy = true
         thread {
+            StorageAccess.ensureBaseDirectories()
             FileUtils.copyAssets(this, Common.APP_DIR_PATH, Common.CONFIG_WECHAT_DIR)
             FileUtils.copyAssets(this, Common.APP_DIR_PATH, Common.CONFIG_VIEW_DIR)
             FileUtils.copyAssets(this, Common.APP_DIR_PATH, Common.ICON_DIR)
@@ -82,27 +107,34 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private val REQUEST_EXTERNAL_STORAGE = 1
-    private val PERMISSIONS_STORAGE = arrayOf("android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE")
-    fun verifyStoragePermissions(activity: Activity) {
+    private fun verifyStoragePermissions(activity: Activity) {
         try {
-            val permission = ActivityCompat.checkSelfPermission(activity,
-                    "android.permission.WRITE_EXTERNAL_STORAGE")
-            if (permission != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(activity, PERMISSIONS_STORAGE, REQUEST_EXTERNAL_STORAGE)
-            } else {
+            if (StorageAccess.hasSharedStorageAccess(activity)) {
                 copyConfig()
+            } else {
+                Toast.makeText(activity, R.string.msg_storage_permission_required, Toast.LENGTH_LONG).show()
+                waitingForStorageGrant = true
+                StorageAccess.requestSharedStorageAccess(activity)
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            Toast.makeText(activity, R.string.msg_permission_fail, Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == StorageAccess.REQUEST_MANAGE_EXTERNAL_STORAGE && !waitingForStorageGrant) {
+            verifyStoragePermissions(this)
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
-        if (requestCode == REQUEST_EXTERNAL_STORAGE) {
-            if (grantResults.isNotEmpty()
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == StorageAccess.REQUEST_LEGACY_EXTERNAL_STORAGE) {
+            if (StorageAccess.hasSharedStorageAccess(this)) {
                 copyConfig()
             } else {
                 Toast.makeText(this, R.string.msg_permission_fail, Toast.LENGTH_LONG).show()

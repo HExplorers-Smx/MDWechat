@@ -16,6 +16,7 @@ import com.google.gson.reflect.TypeToken
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Response
+import java.io.File
 import java.io.IOException
 
 
@@ -65,6 +66,7 @@ object DownloadWechatDialog {
 
                                     override fun onResponse(call: Call?, response: Response) {
                                         val outputPath = Common.APP_DIR_PATH + Common.CONFIG_WECHAT_DIR
+                                        File(outputPath).mkdirs()
                                         val succ = FileIOUtils.writeFileFromString("$outputPath/${item.name}", response.body()?.string())
                                         ToastUtils.showLong("下载微信配置文件${item.name}${if (succ) "成功" else "失败"}")
                                     }

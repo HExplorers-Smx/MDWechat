@@ -1,27 +1,27 @@
-apply plugin: 'com.android.library'
+plugins {
+    id 'com.android.library'
+}
 
 android {
-    compileSdkVersion 23
+    namespace 'com.github.clans.fab'
+    compileSdk 36
 
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 23
-        versionCode 1
-        versionName '1.0'
+        minSdk 21
     }
+
     buildTypes {
         release {
             minifyEnabled false
             debuggable false
         }
-
         debug {
             minifyEnabled false
             debuggable true
         }
     }
-}
 
-dependencies {
+    lint {
+        abortOnError false
+    }
 }
-

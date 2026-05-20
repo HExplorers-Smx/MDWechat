@@ -62,7 +62,7 @@ class SettingsFragment : PreferenceFragment(), Preference.OnPreferenceChangeList
             AlertDialog.Builder(activity)
                     .setTitle("警告")
                     .setMessage("当前版本为${BuildConfig.VERSION_NAME}版，不是正式版本，可能会遇到各种问题/无法预估的风险等。" +
-                            "如果你想反馈问题，请打开最底部的调试开关，重启微信，将/sdcard/mdwechat/logs/目录下当天的日志发我邮箱。" +
+                            "如果你想反馈问题，请打开最底部的调试开关，重启微信，将 /sdcard/mdwechat/logs/ 目录下当天的日志发我邮箱。" +
                             "谢谢合作！")
                     .setPositiveButton("我知道了", null)
                     .setCancelable(false)
